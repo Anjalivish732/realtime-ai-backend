@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Realtime AI Assistant</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    body {
+      margin: 0;
+      background: linear-gradient(135deg, #0f172a, #020617);
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #e5e7eb;
+    }
+
+    .chat-container {
+      width: 420px;
+      height: 640px;
+      background: #020617;
+      border-radius: 20px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 25px 80px rgba(0,0,0,0.6);
+      overflow: hidden;
+      border: 1px solid #1e293b;
+    }
+
+    .chat-header {
+      padding: 18px;
+      background: linear-gradient(135deg, #6366f1, #4f46e5);
+      font-weight: 600;
+      letter-spacing: 0.3px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      background: #22c55e;
+      border-radius: 50%;
+      box-shadow: 0 0 12px #22c55e;
+    }
+
+    .chat-messages {
+      flex: 1;
+      padding: 16px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .message {
+      max-width: 80%;
+      padding: 12px 14px;
+      border-radius: 14px;
+      font-size: 14px;
+      line-height: 1.5;
+      animation: fadeIn 0.2s ease-in;
+      word-wrap: break-word;
+    }
+
+    .user {
+      align-self: flex-end;
+      background: #4f46e5;
+      color: #ffffff;
+      border-bottom-right-radius: 4px;
+    }
+
+    .ai {
+      align-self: flex-start;
+      background: #020617;
+      border: 1px solid #1e293b;
+      border-bottom-left-radius: 4px;
+      color: #e5e7eb;
+    }
+
+    .chat-input {
+      padding: 14px;
+      border-top: 1px solid #1e293b;
+      display: flex;
+      gap: 10px;
+      background: #020617;
+    }
+
+    input {
+      flex: 1;
+      background: #020617;
+      border: 1px solid #1e293b;
+      border-radius: 12px;
+      padding: 12px 14px;
+      color: #e5e7eb;
+      outline: none;
+    }
+
+    input::placeholder {
+      color: #64748b;
+    }
+
+    button {
+      background: linear-gradient(135deg, #6366f1, #4f46e5);
+      border: none;
+      border-radius: 12px;
+      padding: 0 18px;
+      color: white;
+      cursor: pointer;
+      font-weight: 600;
+      transition: transform 0.1s ease, box-shadow 0.1s ease;
+      box-shadow: 0 10px 30px rgba(79,70,229,0.4);
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 14px 40px rgba(79,70,229,0.6);
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="chat-container">
+    <div class="chat-header">
+      <div class="dot"></div>
+      Realtime AI Assistant
+    </div>
+
+    <div class="chat-messages" id="messages"></div>
+
+    <div class="chat-input">
+      <input id="input" placeholder="Ask something..." />
+      <button onclick="sendMessage()">Send</button>
+    </div>
+  </div>
+
+  <script>
+    const sessionId = "session_" + Math.random().toString(36).substring(2, 8);
+    const socket = new WebSocket(`ws://127.0.0.1:8000/ws/session/${sessionId}`);
+
+    const messagesDiv = document.getElementById("messages");
+    const input = document.getElementById("input");
+
+    let currentAIMessage = null;
+
+    socket.onmessage = (event) => {
+      if (!currentAIMessage) {
+        currentAIMessage = document.createElement("div");
+        currentAIMessage.className = "message ai";
+        currentAIMessage.textContent = "";
+        messagesDiv.appendChild(currentAIMessage);
+      }
+
+      currentAIMessage.textContent += event.data;
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    };
+
+    function sendMessage() {
+      const text = input.value.trim();
+      if (!text) return;
+
+      const userMessage = document.createElement("div");
+      userMessage.className = "message user";
+      userMessage.textContent = text;
+      messagesDiv.appendChild(userMessage);
+
+      currentAIMessage = null;
+      socket.send(text);
+      input.value = "";
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
+
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") sendMessage();
+    });
+  </script>
+
+</body>
+</html>
